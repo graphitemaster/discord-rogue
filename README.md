@@ -4,7 +4,7 @@ The following is a tiny Rogue like game for Discord.
 
 # Features
 
-* Procedrual map generation and population
+* Procedural map generation and population
   * Unlimited dungeons
 * Polynomial-counter based stair navigation (unique rooms retain layout)
 * Day and night cycle
