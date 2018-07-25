@@ -35,11 +35,6 @@ The game searches for three text files containing a 30x28 characters
 describing splash screens for start, resume and gameover. These are not
 provided and you must supply your own.
 
-# Feature requests
-
-You may request features on the issue tracker but they may be closed if
-deemed too difficult or outside the scope of what this game is used for
-
 # Optimizations
 
 The code isn't as optimal as it can be, we do a lot of O(n) runs through
@@ -74,6 +69,11 @@ this means lots of calculations involving divisions require the use of
 `Math.floor` to keep things integer-discrete. For example, the
 rasterization techniques require numerical stability for calculating
 integer error otherwise they don't work.
+
+# Feature requests
+
+You may request features on the issue tracker but they may be closed if
+deemed too difficult or outside the scope of what this game is used for
 
 # License
 
