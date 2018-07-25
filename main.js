@@ -1436,7 +1436,7 @@ class Game {
           this.entities.push(new Torch({x: this.player.x, y: this.player.y}));
         } else if (item.item_idx === Item.Health) {
           this.remove_item();
-          this.player.health = 100;
+          this.player.hp = 100;
         } else {
           // TODO(implement other items)
         }
