@@ -1249,7 +1249,7 @@ class Game {
   render_screen_game() {
     this.render_map();
     this.framebuffer.draw_text(2, 1, `${this.player.rupees} ${Chars.Rupee}`);
-    this.framebuffer.draw_text(W - 9, 1, `${this.time}`);
+    this.framebuffer.draw_text(W - 10, 1, `${this.time}`);
     this.framebuffer.draw_text(2, H - 3, `${this.floor} KM | ${this.player.hp} HP | ${this.player.kills} Ks`);
     this.framebuffer.draw_text(2, H - 2, this.message);
   }
