@@ -18,6 +18,34 @@ The following is a tiny Rogue like game for Discord.
 * Macro movement
 * Turn based combat
 
+# Bug reports
+
+You may file any bugs on the issue tracker
+
+### Single source file
+
+Yes everything is a single source file, this turns out to be much easier
+to embed and use with your bot and easier to update. Do not submit bug
+reports about splitting up the source code into multiple files, they
+will be closed on sight.
+
+### Failed to load game assets
+
+The game searches for three text files containing a 30x28 characters
+describing splash screens for start, resume and gameover. These are not
+provided and you must supply your own.
+
+# Feature requests
+
+You may request features on the issue tracker but they may be closed if
+deemed too difficult or outside the scope of what this game is used for
+
+# Optimizations
+
+The code isn't as optimal as it can be, we do a lot of O(n) runs through
+lists of entities and some O(n^2) stuff for generation of dungeons,
+however simplicity was chosen over performance for the first iteration.
+
 # Technical challenges
 
 The way this is to be used is with discord.js's codeblock and edit
@@ -46,34 +74,6 @@ this means lots of calculations involving divisions require the use of
 `Math.floor` to keep things integer-discrete. For example, the
 rasterization techniques require numerical stability for calculating
 integer error otherwise they don't work.
-
-# Bug reports
-
-You may file any bugs on the issue tracker
-
-## Single source file
-
-Yes everything is a single source file, this turns out to be much easier
-to embed and use with your bot and easier to update. Do not submit bug
-reports about splitting up the source code into multiple files, they
-will be closed on sight.
-
-## Failed to load game assets
-
-The game searches for three text files containing a 30x28 characters
-describing splash screens for start, resume and gameover. These are not
-provided and you must supply your own.
-
-# Feature requests
-
-You may request features on the issue tracker but they may be closed if
-deemed too difficult or outside the scope of what this game is used for
-
-# Optimizations
-
-The code isn't as optimal as it can be, we do a lot of O(n) runs through
-lists of entities and some O(n^2) stuff for generation of dungeons,
-however simplicity was chosen over performance for the first iteration.
 
 # License
 
