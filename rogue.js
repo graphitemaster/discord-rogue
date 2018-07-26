@@ -271,14 +271,27 @@ class Framebuffer {
     }
   }
 
-  draw_text(x, y, data) {
+  // Left justified text
+  draw_ltext(x, y, data) {
     let length = data.length;
+    // Truncate the string silently and add ...
     if (length + x > W-2) {
       data = data.substring(0, W-2-x-3) + "...";
     }
     for (let i = 0; i < data.length; i++) {
       this.set_pixel(x + i, y, data[i]);
     }
+  }
+
+  // Right justified text
+  draw_rtext(x, y, data) {
+    this.draw_ltext(W - (data.length + x), y, data);
+  }
+
+  // Center justified text
+  draw_ctext(y, data) {
+    let offset = Math.round(data.length / 2) - 1;
+    this.draw_ltext((W-2)/2-offset, y, data);
   }
 
   draw_text_array(x, y, data) {
@@ -1287,51 +1300,51 @@ class Game {
 
   render_screen_game() {
     this.render_map();
-    this.framebuffer.draw_text(2, 1, `${this.player.rupees} ${Chars.Rupee}`);
-    this.framebuffer.draw_text(W - 10, 1, `${this.time}`);
-    this.framebuffer.draw_text(2, H - 3, `${this.floor} KM | ${this.player.hp} HP | ${this.player.kills} Ks`);
-    this.framebuffer.draw_text(2, H - 2, this.message);
+    this.framebuffer.draw_ltext(2, 1, `${this.player.rupees} ${Chars.Rupee}`);
+    this.framebuffer.draw_rtext(2, 1, `${this.time}`);
+    this.framebuffer.draw_ltext(2, H - 3, `${this.floor} KM | ${this.player.hp} HP | ${this.player.kills} Ks`);
+    this.framebuffer.draw_ltext(2, H - 2, this.message);
   }
 
   render_screen_inventory() {
-    this.framebuffer.draw_text(2, 1, `${this.player.rupees} ${Chars.Rupee}`);
-    this.framebuffer.draw_text((W-2)/2-4, 2, `INVENTORY`);
+    this.framebuffer.draw_ltext(2, 1, `${this.player.rupees} ${Chars.Rupee}`);
+    this.framebuffer.draw_ctext(2, "INVENTORY");
     let items = this.player.items;
     let y = 4;
     for (let i = 0; i < items.length; i++) {
       let item = items[i];
       let cursor = i+1 === this.cursor ? ">" : " ";
       let line = `x${item.quanity} ${Items[item.item_idx].cost} ${Chars.Rupee}`
-      this.framebuffer.draw_text(2, y, `${cursor} ${i+1} - ${Items[item.item_idx].name}`);
-      this.framebuffer.draw_text(2, y+1, "".padStart(W-4, "-"));
-      this.framebuffer.draw_text(W - (line.length + 2), y, line);
+      this.framebuffer.draw_ltext(2, y, `${cursor} ${i+1} - ${Items[item.item_idx].name}`);
+      this.framebuffer.draw_ltext(2, y+1, "".padStart(W-4, "-"));
+      this.framebuffer.draw_rtext(2, y, line);
       y += 2;
     }
     if (items.length > this.cursor-1) {
-      this.framebuffer.draw_text(2, H - 3, Items[items[this.cursor-1].item_idx].description);
+      this.framebuffer.draw_ltext(2, H - 3, Items[items[this.cursor-1].item_idx].description);
     }
   }
 
   render_screen_shop() {
-    this.framebuffer.draw_text(2, 1, `${this.player.rupees} ${Chars.Rupee}`);
-    this.framebuffer.draw_text((W-2)/2-1, 2, `SHOP`);
+    this.framebuffer.draw_ltext(2, 1, `${this.player.rupees} ${Chars.Rupee}`);
+    this.framebuffer.draw_ctext(2, "SHOP");
     let y = 4;
     for (let i = 0; i < Items.length; i++) {
       let item = Items[i];
       let cost = `${item.cost} ${Chars.Rupee}`
       let cursor = i+1 === this.cursor ? ">" : " ";
-      this.framebuffer.draw_text(2, y, `${cursor} ${i+1} - ${item.name}`);
-      this.framebuffer.draw_text(2, y+1, "".padStart(W-4, "-"));
-      this.framebuffer.draw_text(W - (cost.length + 2), y, cost);
+      this.framebuffer.draw_ltext(2, y, `${cursor} ${i+1} - ${item.name}`);
+      this.framebuffer.draw_ltext(2, y+1, "".padStart(W-4, "-"));
+      this.framebuffer.draw_rtext(2, y, cost);
       y += 2;
     }
-    this.framebuffer.draw_text(2, H-3, Items[this.cursor-1].description);
+    this.framebuffer.draw_ltext(2, H-3, Items[this.cursor-1].description);
     let items = this.player.items;
     for (let i = 0; i < items.length; i++) {
       let item = items[i];
       if (item.item_idx === this.cursor-1) {
         let quanity = item.quanity;
-        this.framebuffer.draw_text(2, H-2, `x${quanity}`);
+        this.framebuffer.draw_ltext(2, H-2, `x${quanity}`);
         break;
       }
     }
@@ -1350,72 +1363,32 @@ class Game {
   }
 
   render_screen_help() {
-    const w = "forward";
-    const a = "left";
-    const s = "down";
-    const d = "right";
-    const f = "fight";
-    const i = "inventory";
-    const v = "vendor";
-    const h = "help";
-    const b = "buy";
-    const S = "sell";
-    const u = "use";
-    const e = "escape";
+    let y = 1;
 
-    // 11 characters each side centered
-    this.framebuffer.draw_text((W-2)/2-3, 2, "MOVEMENT");
+    const line = (y, ch, contents) => {
+      this.framebuffer.draw_ltext(2, y, `[${ch}]`);
+      this.framebuffer.draw_rtext(2, y, contents);
+      this.framebuffer.draw_ltext(2, y + 1, "".padStart(W-4, "-"));
+      return y + 1;
+    };
 
-    this.framebuffer.draw_text(2, 3, "[w]");
-    this.framebuffer.draw_text(W - (w.length + 2), 3, w);
-    this.framebuffer.draw_text(2, 4, "".padStart(W-4, "-"));
+    this.framebuffer.draw_ctext(y+1, "MOVEMENT");
 
-    this.framebuffer.draw_text(2, 5, "[a]");
-    this.framebuffer.draw_text(W - (a.length + 2), 5, a);
-    this.framebuffer.draw_text(2, 6, "".padStart(W-4, "-"));
+    y = line(y + 2, "w", "forward");
+    y = line(y + 1, "a", "left");
+    y = line(y + 1, "s", "down");
+    y = line(y + 1, "d", "right");
 
-    this.framebuffer.draw_text(2, 7, "[s]");
-    this.framebuffer.draw_text(W - (s.length + 2), 7, s);
-    this.framebuffer.draw_text(2, 8, "".padStart(W-4, "-"));
+    this.framebuffer.draw_ctext(y+1, "ACTION");
 
-    this.framebuffer.draw_text(2, 9, "[d]");
-    this.framebuffer.draw_text(W - (d.length + 2), 9, d);
-    this.framebuffer.draw_text(2, 10, "".padStart(W-4, "-"));
-
-    // 12 characters each side centered
-    this.framebuffer.draw_text((W-2)/2-2, 11, "ACTION");
-
-    this.framebuffer.draw_text(2, 12, "[f]");
-    this.framebuffer.draw_text(W - (f.length + 2), 12, f);
-    this.framebuffer.draw_text(2, 13, "".padStart(W-4, "-"));
-
-    this.framebuffer.draw_text(2, 14, "[i]");
-    this.framebuffer.draw_text(W - (i.length + 2), 14, i);
-    this.framebuffer.draw_text(2, 15, "".padStart(W-4, "-"));
-
-    this.framebuffer.draw_text(2, 16, "[v]");
-    this.framebuffer.draw_text(W - (v.length + 2), 16, v);
-    this.framebuffer.draw_text(2, 17, "".padStart(W-4, "-"));
-
-    this.framebuffer.draw_text(2, 18, "[b]");
-    this.framebuffer.draw_text(W - (b.length + 2), 18, b);
-    this.framebuffer.draw_text(2, 19, "".padStart(W-4, "-"));
-
-    this.framebuffer.draw_text(2, 20, "[s]");
-    this.framebuffer.draw_text(W - (S.length + 2), 20, S);
-    this.framebuffer.draw_text(2, 21, "".padStart(W-4, "-"));
-
-    this.framebuffer.draw_text(2, 22, "[u]");
-    this.framebuffer.draw_text(W - (u.length + 2), 22, u);
-    this.framebuffer.draw_text(2, 23, "".padStart(W-4, "-"));
-
-    this.framebuffer.draw_text(2, 24, "[h]");
-    this.framebuffer.draw_text(W - (h.length + 2), 24, h);
-    this.framebuffer.draw_text(2, 25, "".padStart(W-4, "-"));
-
-    this.framebuffer.draw_text(2, 26, "[e]");
-    this.framebuffer.draw_text(W - (e.length + 2), 26, e);
-    this.framebuffer.draw_text(2, 27, "".padStart(W-4, "-"));
+    y = line(y + 2, "f", "fight");
+    y = line(y + 1, "i", "inventory");
+    y = line(y + 1, "v", "vendor");
+    y = line(y + 1, "b", "buy");
+    y = line(y + 1, "s", "sell");
+    y = line(y + 1, "u", "use");
+    y = line(y + 1, "h", "help");
+    y = line(y + 1, "e", "escape");
 
     this.set_screen(Screen.Game);
   }
@@ -1622,6 +1595,10 @@ class Game {
       hour12:   true
     };
     this.time = date.toLocaleString('en-US', config);
+    // Zero pad the time
+    if (this.time.indexOf(':') != 2) {
+      this.time = "0" + this.time;
+    }
     let hours = date.getUTCHours();
     this.night = hours <= 9 || hours >= 21; // 9AM to 9PM
   }
@@ -1755,6 +1732,7 @@ class Game {
         this.entities.push(instance);
       }
     }
+    return true;
   }
 
   save() {
@@ -1778,41 +1756,18 @@ class Game {
   }
 }
 
-// This state needs to persist
-let game = new Game();
+exports.Game = Game;
 
-function clear_screen() {
-  process.stdout.write('\033c');
-}
-
-function splash() {
-  clear_screen();
-  console.log(game.update(null));
-}
-
-function update(command) {
-  clear_screen();
-  console.log(game.update(command));
-}
-
-// Display the splash screen
-splash();
-
-// Call game.update(message) with the channel message
-
-// This can be deleted.
-let stdin = process.stdin;
-stdin.setRawMode(true);
-stdin.resume();
-stdin.setEncoding('utf-8');
-let command = "";
-stdin.on('data', function(key) {
-  if (key === '\u0003') {
-    process.exit();
-  } else if (key.charCodeAt(0) == 13) {
-    update(command);
-    command = "";
-  } else {
-    command += key;
-  }
-});
+// There is no more global state, this is a proper node module now and
+// to use it you require it like so
+//
+// let Rogue = require('rogue.js');
+//
+// The game object you now create yourself like so:
+//
+// let game = new Rogue.Game();
+//
+// Then you call game.update(null) for the splash and game.update(command)
+// for each update.
+//
+// You may have multiple game objects in flight now opposed to just one

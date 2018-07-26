@@ -1,0 +1,23 @@
+{
+  "name": "discord-rogue",
+  "version": "1.0.0",
+  "description": "The following is a tiny Berlin-lite Rogue like game for Discord.",
+  "main": "rogue.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/graphitemaster/discord-rogue.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/graphitemaster/discord-rogue/issues"
+  },
+  "homepage": "https://github.com/graphitemaster/discord-rogue#readme",
+  "dependencies": {
+    "discord.js": "^11.3.2"
+  }
+}
