@@ -837,12 +837,13 @@ class Game {
     // Do not reveal enemies and stairs on new games
     this.reveal = false;
 
-    // Pick a random spawn location for the player
+    // Pick a random spawn location for the player that isn't on an
+    // enemy or a rupee
     do {
       let playable_area = this.find_random_playable_area();
       this.player.x = playable_area.x;
       this.player.y = playable_area.y;
-    } while(this.check_for_enemy());
+    } while(this.check_for_enemy() || this.check_for_rupee());
   }
 
   generate_map() {
