@@ -1,3 +1,5 @@
+"use strict";
+
 // A tiny rouge by graphitemaster
 
 let fs = require('fs');
@@ -101,11 +103,9 @@ const Entity = {
 
 class Player {
   constructor(state) {
-    // Immutable state
-    this.char       = Chars.Player;
-    this.type       = Entity.Player;
+    Object.defineProperty(this, "char", { value: Chars.Player,  writeable: false });
+    Object.defineProperty(this, "type", { value: Entity.Player, writeable: false });
 
-    // Mutable state
     this.weapon_idx = state ? state.weapon : 0;
     this.weapon_obj = new Weapon(Weapons[this.weapon_idx]);
     this.hp         = state ? state.hp : PLAYER_HP;
@@ -132,31 +132,27 @@ class Player {
 
 class Rupee {
   constructor(state) {
-    // Immutable state
-    this.char = Chars.Rupee;
-    this.type = Entity.Rupee;
+    Object.defineProperty(this, "char", { value: Chars.Rupee,  writeable: false });
+    Object.defineProperty(this, "type", { value: Entity.Rupee, writeable: false });
 
-    // Mutable state
-    this.x    = state ? state.x : 0;
-    this.y    = state ? state.y : 0;
+    this.x = state ? state.x : 0;
+    this.y = state ? state.y : 0;
   }
 
   serialize() {
     return {
-      x:     this.x,
-      y:     this.y,
-      type:  this.type
+      x:    this.x,
+      y:    this.y,
+      type: this.type
     };
   }
 };
 
 class Torch {
   constructor(state) {
-    // Immutable state
-    this.type = Entity.Torch;
-    this.char = Chars.Torch;
+    Object.defineProperty(this, "char", { value: Chars.Torch,  writeable: false });
+    Object.defineProperty(this, "type", { value: Entity.Torch, writeable: false });
 
-    // Mutable state
     this.x = state ? state.x : 0;
     this.y = state ? state.y : 0;
   }
@@ -171,14 +167,12 @@ class Torch {
 
 class Enemy {
   constructor(state) {
-    let template    = Enemies[state.instance];
+    const template = Enemies[state.instance];
 
-    // Immutable state
-    this.name       = template.name;
-    this.char       = template.char;
-    this.type       = Entity.Enemy;
+    Object.defineProperty(this, "char", { value: template.char, writeable: false });
+    Object.defineProperty(this, "type", { value: Entity.Enemy,  writeable: false });
+    Object.defineProperty(this, "name", { value: template.name, writeable: false });
 
-    // Mutable state
     this.weapon_idx = state.weapon ? state.weapon : template.weapon;
     this.weapon_obj = new Weapon(Weapons[this.weapon_idx]);
     this.hp         = state.hp ? state.hp : template.hp;
@@ -188,7 +182,7 @@ class Enemy {
 
   instance() {
     for (let i = 0; i < Enemies.length; i++) {
-      let enemy = Enemies[i];
+      const enemy = Enemies[i];
       if (enemy.name === this.name) {
         return i;
       }
@@ -224,10 +218,9 @@ class Random {
   }
 
   next_in_range(min, max) {
-    let n = max - min + 1;
-    let i = Math.floor(this.next() % n);
-    if (i < 0) i = -i;
-    return i + min;
+    const n = max - min + 1;
+    const i = Math.floor(this.next() % n);
+    return i < 0 ? -i : i + min;
   }
 }
 
@@ -273,7 +266,7 @@ class Framebuffer {
 
   // Left justified text
   draw_ltext(x, y, data) {
-    let length = data.length;
+    const length = data.length;
     // Truncate the string silently and add ...
     if (length + x > W-2) {
       data = data.substring(0, W-2-x-3) + "...";
@@ -290,7 +283,7 @@ class Framebuffer {
 
   // Center justified text
   draw_ctext(y, data) {
-    let offset = Math.round(data.length / 2) - 1;
+    const offset = Math.round(data.length / 2) - 1;
     this.draw_ltext((W-2)/2-offset, y, data);
   }
 
@@ -328,15 +321,15 @@ const Cell = {
   Corridor:   4,
   Door:       5,
   UpStairs:   6,
-  DownStairs: 7,
-  Border:     8
+  DownStairs: 7
 };
 
 class Map {
   constructor() {
+    Object.defineProperty(this, "w", { value: W - 4,     writeable: false }); // 2px border on each side
+    Object.defineProperty(this, "h", { value: H - 4 - 2, writeable: false }); // 2px border on each side + 2px line status output
+
     this.grid = [];
-    this.w = W - 4;     // 2px border on each side
-    this.h = H - 4 - 2; // 2px border on each side + 2 lines of status output
     this.set_cells(0, 0, this.w, this.h, Cell.Unused);
   }
 
@@ -345,8 +338,8 @@ class Map {
   }
 
   set_cells(xbeg, ybeg, xend, yend, type) {
-    for (let y = ybeg; y != yend + 1; ++y) {
-      for (let x = xbeg; x != xend + 1; ++x) {
+    for (let y = ybeg; y !== yend + 1; ++y) {
+      for (let x = xbeg; x !== xend + 1; ++x) {
         this.set_cell(x, y, type);
       }
     }
@@ -384,7 +377,7 @@ class Map {
   }
 
   is_area_stair(x, y) {
-    let cell = this.get_cell_wrap(x, y);
+    const cell = this.get_cell_wrap(x, y);
     return cell === Cell.UpStairs || cell === Cell.DownStairs;
   }
 
@@ -424,7 +417,7 @@ class Map {
 
   rasterize() {
     // Copy the grid
-    let grid = Object.assign({}, this.grid);
+    const grid = Object.assign({}, this.grid);
 
     // Convert the grid to characters for rasterization
     for (let y = 0; y < this.h; y++) {
@@ -480,7 +473,7 @@ class Generator {
 
   generate(seed) {
     this.random = new Random(seed);
-    let map = new Map();
+    const map = new Map();
     while (!this.make_dungeon(map)) {
       console.log("Failed to make beatable map, trying again...");
     }
@@ -488,7 +481,7 @@ class Generator {
   }
 
   make_corridor(map, x, y, max_length, direction) {
-    let length = this.random.next_in_range(2, max_length);
+    const length = this.random.next_in_range(2, max_length);
 
     let xbeg = x;
     let ybeg = y;
@@ -517,8 +510,8 @@ class Generator {
   }
 
   make_room(map, x, y, xmax, ymax, direction) {
-    let xlen = this.random.next_in_range(4, xmax);
-    let ylen = this.random.next_in_range(4, ymax);
+    const xlen = this.random.next_in_range(4, xmax);
+    const ylen = this.random.next_in_range(4, ymax);
 
     let xbeg = x;
     let ybeg = y;
@@ -559,7 +552,7 @@ class Generator {
   }
 
   make_feature(map, x, y, xmod, ymod, direction) {
-    let chance = this.random.next_in_range(0, 100);
+    const chance = this.random.next_in_range(0, 100);
     if (chance <= this.chance_room) {
       if (this.make_room(map, x + xmod, y + ymod, 8, 6, direction)) {
         map.set_cell(x, y, Cell.Door);
@@ -576,14 +569,13 @@ class Generator {
   }
 
   make_features(map) {
-    let tries = 0;
-    let max_tries = GEN_QUALITY;
+    const max_tries = GEN_QUALITY;
+    for (let tries = 0; tries !== max_tries; ++tries) {
+      const x = this.random.next_in_range(1, map.w - 2);
+      const y = this.random.next_in_range(1, map.h - 2);
 
-    for (; tries != max_tries; ++tries) {
-      let x = this.random.next_in_range(1, map.w - 2);
-      let y = this.random.next_in_range(1, map.h - 2);
-
-      if (map.get_cell(x, y) != Cell.Wall && map.get_cell(x, y) != Cell.Corridor) {
+      const cell = map.get_cell(x, y);
+      if (cell !== Cell.Wall && cell !== Cell.Corridor) {
         continue;
       }
 
@@ -614,12 +606,10 @@ class Generator {
   }
 
   make_stairs(map, type) {
-    let tries = 0;
-    let max_tries = GEN_QUALITY;
-
-    for ( ; tries != max_tries; ++tries) {
-      let x = this.random.next_in_range(1, map.w - 2);
-      let y = this.random.next_in_range(1, map.h - 2);
+    const max_tries = GEN_QUALITY;
+    for (let tries = 0; tries !== max_tries; ++tries) {
+      const x = this.random.next_in_range(1, map.w - 2);
+      const y = this.random.next_in_range(1, map.h - 2);
 
       // Don't generate if if it's not adjacent to a floor or a corridor
       if (!map.is_cell_adjacent(x, y, Cell.Floor) && !map.is_cell_adjacent(x, y, Cell.Corridor)) {
@@ -649,7 +639,7 @@ class Generator {
     this.make_room(map, Math.floor(map.w / 2), Math.floor(map.h / 2), 8, 6, this.get_random_direction());
 
     // Iteratively make features from the room until all features are created
-    for (let features = 1; features != this.features; ++features) {
+    for (let features = 1; features !== this.features; ++features) {
       if (!this.make_features(map)) {
         break;
       }
@@ -678,13 +668,14 @@ const Search = {
 // is small and we're on a grid with limited directions.
 class AI {
   constructor(map, entities) {
-    this.w = map.w;
-    this.h = map.h;
+    Object.defineProperty(this, "w", { value: map.w, writeable: false });
+    Object.defineProperty(this, "h", { value: map.h, writeable: false });
+
     this.grid = [];
 
     // Insert entities into the grid as obstacles and goals
     for (let i = 0; i < entities.length; i++) {
-      let entity = entities[i];
+      const entity = entities[i];
       if (entity.type === Entity.Player) {
         // The area around the player is the goal
         this.grid[(entity.y-1) * map.w +  entity.x]    = Search.Goal; // W
@@ -713,8 +704,8 @@ class AI {
   }
 
   location_status(location) {
-    let x = location.x;
-    let y = location.y;
+    const x = location.x;
+    const y = location.y;
     if (x < 0 || x >= this.w || y < 0 || y >= this.h) {
       return Search.Invalid;
     } else if (this.grid[y * this.w + x] === Search.Goal) {
@@ -731,7 +722,8 @@ class AI {
     let x = position.x;
     let y = position.y;
 
-    let path = position.path.slice();
+    const path = position.path.slice();
+
     path.push(direction);
 
     switch (direction) {
@@ -742,7 +734,7 @@ class AI {
     break;
     }
 
-    let location = {
+    const location = {
       x:      x,
       y:      y,
       path:   path,
@@ -760,29 +752,29 @@ class AI {
   }
 
   find(position) {
-    let location = {
+    const location = {
       x:      position.x,
       y:      position.y,
       path:   [],
       status: Search.Start
     };
 
-    let queue = [location];
+    const queue = [location];
     while (queue.length > 0) {
-      let current_location = queue.shift();
+      const current_location = queue.shift();
       // Explore in each direction for the goal
-      let directions = [
+      const directions = [
         Direction.North,
         Direction.East,
         Direction.South,
         Direction.West
       ];
       for (let i = 0; i < directions.length; i++) {
-        let location = this.explore(current_location, directions[i]);
-        if (location.status === Search.Goal) {
-          return location.path;
-        } else if (location.status === Search.Valid) {
-          queue.push(location);
+        const explore_location = this.explore(current_location, directions[i]);
+        if (explore_location.status === Search.Goal) {
+          return explore_location.path;
+        } else if (explore_location.status === Search.Valid) {
+          queue.push(explore_location);
         }
       }
     }
@@ -873,7 +865,7 @@ class Game {
     // Pick a random spawn location for the player that isn't on an
     // enemy or a rupee
     do {
-      let playable_area = this.find_random_playable_area();
+      const playable_area = this.find_random_playable_area();
       this.player.x = playable_area.x;
       this.player.y = playable_area.y;
     } while(this.check_for_enemy() || this.check_for_rupee());
@@ -889,21 +881,21 @@ class Game {
     this.entities.push(this.player);
 
     // Generate rupees
-    let rupees = this.random.next_in_range(RUPEE_MIN, RUPEE_MAX);
+    const rupees = this.random.next_in_range(RUPEE_MIN, RUPEE_MAX);
     for (let i = 0; i < rupees; i++) {
-      let location = this.find_random_playable_area();
+      const location = this.find_random_playable_area();
       this.entities.push(new Rupee(location));
     }
 
     // Generate enemy entities
-    let enemies = this.random.next_in_range(ENEMY_MIN, ENEMY_MAX);
+    const enemies = this.random.next_in_range(ENEMY_MIN, ENEMY_MAX);
     for (let i = 0; i < enemies; i++) {
       // Pick a random enemy
-      let index = this.random.next_in_range(0, Enemies.length - 1);
+      const index = this.random.next_in_range(0, Enemies.length - 1);
       // Create a new instance of that enemy
-      let enemy = new Enemy({instance: index});
+      const enemy = new Enemy({instance: index});
       // Find a spawn position for it that is in a playable cell
-      let location = this.find_random_playable_area();
+      const location = this.find_random_playable_area();
       // Set that spawn position
       enemy.x = location.x;
       enemy.y = location.y;
@@ -913,14 +905,16 @@ class Game {
   }
 
   render_map() {
-    let map = this.map;
-    let grid = map.rasterize();
     let result = "";
+
+    const map = this.map;
+    const grid = map.rasterize();
+
     for (let y = 0; y < map.h; y++) {
       for (let x = 0; x < map.w; x++) {
         // Check if enemy or player intersects this space
-        let entity = this.get_area_entity(x, y, [Entity.Player, Entity.Enemy, Entity.Rupee, Entity.Torch]);
-        let position = {x: x, y: y};
+        const entity = this.get_area_entity(x, y, [Entity.Player, Entity.Enemy, Entity.Rupee, Entity.Torch]);
+        const position = {x: x, y: y};
         let draw = this.night ? false : true;
 
         // When a map is used, then entities and stairs should be visible
@@ -934,9 +928,9 @@ class Game {
         }
 
         // Area around a torch entities are always visible
-        let entities = this.entities;
+        const entities = this.entities;
         for (let i = 0; i < entities.length; i++) {
-          let entity = entities[i];
+          const entity = entities[i];
           if (entity.type === Entity.Torch) {
             if (this.midpoint_circle(position, LRADIUS, entity)) {
               draw = true;
@@ -947,7 +941,7 @@ class Game {
 
         if (entity) {
           // They turn to werewolfs at night
-          let char = this.night && entity.type === Entity.Enemy ? "W" : entity.char;
+          const char = this.night && entity.type === Entity.Enemy ? "W" : entity.char;
           result += draw ? char : " ";
         } else {
           result += draw ? grid[x + map.w * y] : " ";
@@ -970,12 +964,12 @@ class Game {
   // Implementation of Bresenham's line algorithm
   // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
   bresenham(a, b) {
-    let result = [];
     let x0 = a.x;
     let y0 = a.y;
     let x1 = b.x;
     let y1 = b.y;
-    let swap_xy = Math.abs(y1 - y0) > Math.abs(x1 - x0);
+    const swap_xy = Math.abs(y1 - y0) > Math.abs(x1 - x0);
+    const result = [];
     if (swap_xy) {
       [x0, y0] = [y0, x0];
       [x1, y1] = [y1, x1];
@@ -984,11 +978,11 @@ class Game {
       [x0, x1] = [x1, x0];
       [y0, y1] = [y1, y0];
     }
-    let delta_x = x1 - x0;
-    let delta_y = Math.floor(Math.abs(y1 - y0));
+    const delta_x = x1 - x0;
+    const delta_y = Math.floor(Math.abs(y1 - y0));
+    const y_step = y0 < y1 ? 1 : -1;
     let error = Math.floor(delta_x / 2);
     let y = y0;
-    let y_step = y0 < y1 ? 1 : -1;
     for (let x = x0; x < x1 + 1; x++) {
       if (swap_xy) {
         result.push({ x: y, y: x });
@@ -1013,8 +1007,8 @@ class Game {
   // segment to see if the point is in bounds, for all line segments
   // forming the circle.
   midpoint_circle(position, radius, check) {
-    let x0 = position.x;
-    let y0 = position.y;
+    const x0 = position.x;
+    const y0 = position.y;
     let x = radius;
     let y = 0;
     let x_change = (1 - (radius << 1)) | 0;
@@ -1044,9 +1038,9 @@ class Game {
   }
 
   line_of_sight(a, b) {
-    let result = this.bresenham(a, b);
+    const result = this.bresenham(a, b);
     for (let i = 0; i < result.length; i++) {
-      let cell = result[i];
+      const cell = result[i];
       if (!this.map.is_area_playable(cell.x, cell.y)) {
         return false;
       }
@@ -1055,7 +1049,7 @@ class Game {
   }
 
   move_entity(entity, direction) {
-    let offset = this.dir_offset(direction);
+    const offset = this.dir_offset(direction);
     if (this.map.is_area_playable(entity.x + offset.x, entity.y + offset.y)) {
       entity.x += offset.x;
       entity.y += offset.y;
@@ -1073,9 +1067,9 @@ class Game {
   }
 
   check_enemy(enemy, x, y) {
-    let that = this;
+    const that = this;
     const check = (direction) => {
-      let offset = that.dir_offset(direction);
+      const offset = that.dir_offset(direction);
       return enemy.x === x + offset.x && enemy.y === y + offset.y;
     }
     return check(Direction.North) || check(Direction.East) || check(Direction.South) || check(Direction.West);
@@ -1083,10 +1077,10 @@ class Game {
 
   check_for_enemy() {
     // Search around the player for an enemy
-    let x = this.player.x;
-    let y = this.player.y;
+    const x = this.player.x;
+    const y = this.player.y;
     for (let i = 0; i < this.entities.length; i++) {
-      let entity = this.entities[i];
+      const entity = this.entities[i];
       if (entity.type === Entity.Enemy && this.check_enemy(entity, x, y)) {
         return entity;
       }
@@ -1102,7 +1096,7 @@ class Game {
     // Determine the stair type that the player is on, adjust the floor
     // number and calculate the opposite stair type for the spawn location
     // on the other floor.
-    let stair_type = this.map.get_cell(this.player.x, this.player.y);
+    const stair_type = this.map.get_cell(this.player.x, this.player.y);
     let opposite_type = 0;
     switch (stair_type) {
       /****/ case Cell.UpStairs:   this.floor++; opposite_type = Cell.DownStairs;
@@ -1114,7 +1108,7 @@ class Game {
 
     // Spawn the player on the stair case on the other floor that is
     // opposite to the stair case they came from.
-    let stairs = this.map.find_stairs(opposite_type);
+    const stairs = this.map.find_stairs(opposite_type);
     this.player.x = stairs.x;
     this.player.y = stairs.y;
 
@@ -1122,7 +1116,7 @@ class Game {
   }
 
   remove_enemy(enemy) {
-    let index = this.entities.indexOf(enemy);
+    const index = this.entities.indexOf(enemy);
     if (index > -1) {
       // Player gets another kill
       this.player.kills++;
@@ -1173,7 +1167,7 @@ class Game {
   }
 
   update_rupee(rupee) {
-    let index = this.entities.indexOf(rupee);
+    const index = this.entities.indexOf(rupee);
     if (index > -1) {
       // Player gets another rupee
       this.player.rupees++;
@@ -1190,8 +1184,8 @@ class Game {
       return false;
     }
     // Regular expression for any multiple of wasd and optional multiple numbers
-    let movement = /([wasd]+)(\d+)?/;
-    let groups = command.match(movement);
+    const movement = /([wasd]+)(\d+)?/;
+    const groups = command.match(movement);
     if (!groups) {
       return false;
     }
@@ -1242,8 +1236,8 @@ class Game {
       if (movement[1].length > 1) {
         return false;
       }
-      let direction = get_direction(movement[1]);
-      let count = parseInt(movement[2]);
+      const direction = get_direction(movement[1]);
+      const count = parseInt(movement[2]);
       for (let i = 0; i < Math.min(count, DIST); i++) {
         if (!this.move_player(direction)) {
           return false;
@@ -1256,7 +1250,7 @@ class Game {
     } else if (movement[1].length === 1 || /^(.)\1+$/.test(movement[1])) {
       // When it's not a numeric movement then it's probably just multiple
       // characters specifying the movement, go ahead and apply those
-      let length = Math.min(movement[1].length, DIST);
+      const length = Math.min(movement[1].length, DIST);
       for (let i = 0; i < length; i++) {
         if (!this.move_player(get_direction(movement[1][0]))) {
           return false;
@@ -1271,7 +1265,7 @@ class Game {
   }
 
   do_command_fight() {
-    let enemy = this.check_for_enemy();
+    const enemy = this.check_for_enemy();
     if (enemy) {
       this.update_enemy(enemy);
       return true;
@@ -1282,7 +1276,7 @@ class Game {
   // Simulate one step of enemy AI
   update_ai() {
     for (let i = 0; i < this.entities.length; i++) {
-      let entity = this.entities[i];
+      const entity = this.entities[i];
       if (entity.type !== Entity.Enemy) {
         continue;
       }
@@ -1290,8 +1284,8 @@ class Game {
         continue;
       }
 
-      let ai = new AI(this.map, this.entities);
-      let direction = ai.find(entity);
+      const ai = new AI(this.map, this.entities);
+      const direction = ai.find(entity);
       if (direction) {
         this.move_entity(entity, direction[0]);
       }
@@ -1309,12 +1303,12 @@ class Game {
   render_screen_inventory() {
     this.framebuffer.draw_ltext(2, 1, `${this.player.rupees} ${Chars.Rupee}`);
     this.framebuffer.draw_ctext(2, "INVENTORY");
-    let items = this.player.items;
+    const items = this.player.items;
     let y = 4;
     for (let i = 0; i < items.length; i++) {
-      let item = items[i];
-      let cursor = i+1 === this.cursor ? ">" : " ";
-      let line = `x${item.quanity} ${Items[item.item_idx].cost} ${Chars.Rupee}`
+      const item = items[i];
+      const cursor = i+1 === this.cursor ? ">" : " ";
+      const line = `x${item.quanity} ${Items[item.item_idx].cost} ${Chars.Rupee}`
       this.framebuffer.draw_ltext(2, y, `${cursor} ${i+1} - ${Items[item.item_idx].name}`);
       this.framebuffer.draw_ltext(2, y+1, "".padStart(W-4, "-"));
       this.framebuffer.draw_rtext(2, y, line);
@@ -1330,20 +1324,20 @@ class Game {
     this.framebuffer.draw_ctext(2, "SHOP");
     let y = 4;
     for (let i = 0; i < Items.length; i++) {
-      let item = Items[i];
-      let cost = `${item.cost} ${Chars.Rupee}`
-      let cursor = i+1 === this.cursor ? ">" : " ";
+      const item = Items[i];
+      const cost = `${item.cost} ${Chars.Rupee}`
+      const cursor = i+1 === this.cursor ? ">" : " ";
       this.framebuffer.draw_ltext(2, y, `${cursor} ${i+1} - ${item.name}`);
       this.framebuffer.draw_ltext(2, y+1, "".padStart(W-4, "-"));
       this.framebuffer.draw_rtext(2, y, cost);
       y += 2;
     }
     this.framebuffer.draw_ltext(2, H-3, Items[this.cursor-1].description);
-    let items = this.player.items;
+    const items = this.player.items;
     for (let i = 0; i < items.length; i++) {
-      let item = items[i];
+      const item = items[i];
       if (item.item_idx === this.cursor-1) {
-        let quanity = item.quanity;
+        const quanity = item.quanity;
         this.framebuffer.draw_ltext(2, H-2, `x${quanity}`);
         break;
       }
@@ -1395,12 +1389,13 @@ class Game {
 
   update_screen_game(command) {
     // Determine the command supplied
-    let movement  = this.is_command_movement(command);
-    let inventory = this.is_command_inventory(command);
-    let shop      = this.is_command_shop(command);
-    let fight     = this.is_command_fight(command);
-    let help      = this.is_command_help(command);
-    let moved     = false;
+    const movement  = this.is_command_movement(command);
+    const inventory = this.is_command_inventory(command);
+    const shop      = this.is_command_shop(command);
+    const fight     = this.is_command_fight(command);
+    const help      = this.is_command_help(command);
+
+    let moved = false;
 
     // Interact based on the command type
     if (movement) {
@@ -1409,7 +1404,7 @@ class Game {
       } else {
         if (this.do_command_movement(movement)) {
           // Check to see if the movement encountered a fight
-          let enemy = this.check_for_enemy();
+          const enemy = this.check_for_enemy();
           if (enemy) {
             this.message = `Enc: ${enemy.name}`;
           } else {
@@ -1432,7 +1427,7 @@ class Game {
     } else if (command && command.length > 0) {
       this.message = "Unknown or malformed command"; // exactly fits
     } else {
-      let enemy = this.check_for_enemy();
+      const enemy = this.check_for_enemy();
       if (enemy) {
         this.message = `Enc: ${enemy.name}`;
       } else {
@@ -1444,9 +1439,9 @@ class Game {
     if (moved) {
       // Check if the player interacts with stair or enemy, update
       // based on the interaction state.
-      let stair = this.check_for_stair();
-      let enemy = this.check_for_enemy();
-      let rupee = this.check_for_rupee();
+      const stair = this.check_for_stair();
+      const enemy = this.check_for_enemy();
+      const rupee = this.check_for_rupee();
 
       if (stair) {
         this.update_stair();
@@ -1457,18 +1452,19 @@ class Game {
       }
 
       this.update_ai();
-      enemy = this.check_for_enemy();
-      if (enemy) {
-        this.message = `Enc: ${enemy.name}`;
+
+      const check = this.check_for_enemy();
+      if (check) {
+        this.message = `Enc: ${check.name}`;
       }
     }
   }
 
   remove_item() {
-    let items = this.player.items;
-    let index = this.cursor-1;
+    const items = this.player.items;
+    const index = this.cursor-1;
     if (index < items.length) {
-      let item = items[index];
+      const item = items[index];
       if (item.quanity === 1) {
         items.splice(index, 1);
         this.cursor = 1;
@@ -1486,17 +1482,17 @@ class Game {
     } else if (this.is_command_shop(command)) {
       this.set_screen(Screen.Shop);
     } else if (command === "s") {
-      let items = this.player.items;
+      const items = this.player.items;
       if (this.cursor-1 < items.length) {
-        let item = items[this.cursor-1];
-        let cost = Items[item.item_idx].cost;
+        const item = items[this.cursor-1];
+        const cost = Items[item.item_idx].cost;
         this.remove_item()
         this.player.rupees += cost;
       }
     } else if (command === "u") {
-      let items = this.player.items;
+      const items = this.player.items;
       if (this.cursor-1 < items.length) {
-        let item = items[this.cursor-1];
+        const item = items[this.cursor-1];
         if (item.item_idx === Item.Torch) { // Torch
           this.remove_item();
           this.entities.push(new Torch({x: this.player.x, y: this.player.y}));
@@ -1510,7 +1506,7 @@ class Game {
           this.reveal = true;
           this.set_screen(Screen.Game);
         } else if (item.item_idx === Item.Silver) {
-          let enemy = this.check_for_enemy();
+          const enemy = this.check_for_enemy();
           if (enemy) {
             this.remove_item();
             this.remove_enemy(enemy);
@@ -1523,7 +1519,7 @@ class Game {
         }
       }
     } else {
-     let i = parseInt(command);
+     const i = parseInt(command);
      // Cursor selection is 1-based, array is 0-based
      if (i > 0 && i <= this.player.items.length) {
        this.cursor = i;
@@ -1538,13 +1534,13 @@ class Game {
       this.set_screen(Screen.Inventory);
     } else if (command === "b") {
       // Go ahead and buy the item
-      let cost = Items[this.cursor-1].cost;
+      const cost = Items[this.cursor-1].cost;
       if (this.player.rupees >= cost) {
         // Check if the player already has this item
-        let items = this.player.items;
+        const items = this.player.items;
         let added = false;
         for (let i = 0; i < items.length; i++) {
-          let item = items[i];
+          const item = items[i];
           // Just increase the quanity if they have this item
           if (item.item_idx === this.cursor-1) {
             item.quanity++;
@@ -1559,7 +1555,7 @@ class Game {
         this.player.rupees -= cost;
       }
     } else {
-      let i = parseInt(command);
+      const i = parseInt(command);
       // Cursor selection is 1-based, array is 0-based
       if (i > 0 && i <= Items.length) {
         this.cursor = i;
@@ -1587,7 +1583,7 @@ class Game {
 
   update_time() {
     // Update the current time
-    let date = new Date();
+    const date = new Date();
     const config = {
       timeZone: 'UTC',
       hour:     'numeric',
@@ -1599,7 +1595,7 @@ class Game {
     if (this.time.indexOf(':') != 2) {
       this.time = "0" + this.time;
     }
-    let hours = date.getUTCHours();
+    const hours = date.getUTCHours();
     this.night = hours <= 9 || hours >= 21; // 9AM to 9PM
   }
 
@@ -1671,7 +1667,7 @@ class Game {
 
   get_area_entity(x, y, types) {
     for (let i = 0; i < this.entities.length; i++) {
-      let entity = this.entities[i];
+      const entity = this.entities[i];
       if (entity.x === x && entity.y === y) {
         for (let j = 0; j < types.length; j++) {
           if (entity.type === types[j]) {
@@ -1684,7 +1680,7 @@ class Game {
   }
 
   find_random_playable_area() {
-    let map = this.map;
+    const map = this.map;
 
     // Pick a random location in a playable cell that isn't stairs or door
     let x = 0;
@@ -1697,7 +1693,7 @@ class Game {
   }
 
   serialize() {
-    let entities = [];
+    const entities = [];
     for (let i = 0; i < this.entities.length; i++) {
       entities.push(this.entities[i].serialize());
     }
@@ -1723,13 +1719,12 @@ class Game {
     this.random = new Random(this.seed);
     this.entities = [];
     for (let i = 0; i < object.entities.length; i++) {
-      let entity = object.entities[i];
+      const entity = object.entities[i];
       if (entity.type == Entity.Player) {
         this.player = new Player(entity);
         this.entities.push(this.player);
       } else if (entity.type === Entity.Enemy) {
-        let instance = new Enemy(entity);
-        this.entities.push(instance);
+        this.entities.push(new Enemy(entity));
       }
     }
     return true;

@@ -10,6 +10,13 @@ client.on("ready", () => {
   // Search for the rogue channel
   channel = client.channels.find("name", "rogue");
 
+  // Delete all messages in the channel
+  async function clear() {
+    const fetched = await channel.fetchMessages({ limit: 99 });
+    channel.bulkDelete(fetched);
+  }
+  clear();
+
   // Send the empty splash to the channel with scheme syntax highlighting,
   // and get the handle to the message sent so it can be modified
   channel.send("```scheme\n" + game.update(null) + "```")
