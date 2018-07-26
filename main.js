@@ -1735,7 +1735,7 @@ class Game {
 
   deserialize(object) {
     // Version incompatability, ignore using the save file
-    if (object.version != VERSION) {
+    if (object.version !== VERSION) {
       console.log("Failed to load save file due to version change, ignoring save");
       return false;
     }
