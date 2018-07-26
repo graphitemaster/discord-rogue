@@ -58,16 +58,16 @@ const Enemies = [
 
 const Item = {
   Torch:  0,
-  Key:    1,
-  Health: 2
+  Health: 1,
+  Map:    2
 };
 
 // We're limited to 10 items, no fewer and no more, the shop can't
 // display more in the limited screen space
 const Items = [
-  { name: "Torch",    description: "Light up a room",           cost: 1 },
-  { name: "Key",      description: "Key to open a door",        cost: 3 },
-  { name: "Health",   description: "Restores health to 100 HP", cost: 5 }
+  { name: "Torch",   description: "Light up a room",            cost: 1 },
+  { name: "Health",  description: "Restores health to 100 HP",  cost: 3 },
+  { name: "Map",     description: "Reveals enemies and stairs", cost: 4 }
   // TODO: more items (we need 10 in total to "fill" the game out)
 ];
 
@@ -456,7 +456,9 @@ class Generator {
   generate(seed) {
     this.random = new Random(seed);
     let map = new Map();
-    this.make_dungeon(map);
+    while (!this.make_dungeon(map)) {
+      console.log("Failed to make betable map, trying again...");
+    }
     return map;
   }
 
@@ -622,8 +624,9 @@ class Generator {
     }
 
     // Create a set of stairs in each direction
-    this.make_stairs(map, Cell.UpStairs);
-    this.make_stairs(map, Cell.DownStairs);
+    if (!this.make_stairs(map, Cell.UpStairs) || !this.make_stairs(map, Cell.DownStairs)) {
+      return false;
+    }
 
     return true;
   }
@@ -829,6 +832,9 @@ class Game {
     this.generate_map();
     this.populate_map();
 
+    // Do not reveal enemies and stairs on new games
+    this.reveal = false;
+
     // Pick a random spawn location for the player
     do {
       let playable_area = this.find_random_playable_area();
@@ -879,7 +885,12 @@ class Game {
         // Check if enemy or player intersects this space
         let entity = this.get_area_entity(x, y, [Entity.Player, Entity.Enemy, Entity.Rupee, Entity.Torch]);
         let position = {x: x, y: y};
-        let draw = false; //this.night ? false : true;
+        let draw = this.night ? false : true;
+
+        // When a map is used, then entities and stairs should be visible
+        if (this.reveal && (entity || this.map.is_area_stair(x, y))) {
+          draw = true;
+        }
 
         // Area around the player is always visible
         if (this.midpoint_circle(position, LRADIUS, this.player)) {
@@ -1151,23 +1162,17 @@ class Game {
 
   // Determines if the command supplied is a fight command
   is_command_fight(command) {
-    return command === "f"
-        || command === "fight"
-        || command === "atk"
-        || command === "attack"
-        || command === "hit";
+    return command === "f";
   }
 
   // Determines if the command supplied is a help command
   is_command_help(command) {
-    return command === "h"
-        || command === "help"
-        || command === "info";
+    return command === "h";
   }
 
   // Determines if the command supplie is an exit command
   is_command_exit(command) {
-    return command === "e" || command === "esc" || command === "exit";
+    return command === "e";
   }
 
   // Command handler functions, to handle the command type
@@ -1311,18 +1316,72 @@ class Game {
   }
 
   render_screen_help() {
-    this.framebuffer.draw_text(2, 2, "Movement:");
-    this.framebuffer.draw_text(2, 3, " w - forward");
-    this.framebuffer.draw_text(2, 4, " a - left");
-    this.framebuffer.draw_text(2, 5, " s - down");
-    this.framebuffer.draw_text(2, 6, " d - right");
+    const w = "forward";
+    const a = "left";
+    const s = "down";
+    const d = "right";
+    const f = "fight";
+    const i = "inventory";
+    const v = "vendor";
+    const h = "help";
+    const b = "buy";
+    const S = "sell";
+    const u = "use";
+    const e = "escape";
 
-    this.framebuffer.draw_text(2, 9, "Actions:");
-    this.framebuffer.draw_text(2, 10, " f - fight");
-    this.framebuffer.draw_text(2, 11, " i - inventory (s to sell)");
-    this.framebuffer.draw_text(2, 12, " v - vendor (b to buy)");
-    this.framebuffer.draw_text(2, 13, " u - use item");
-    this.framebuffer.draw_text(2, 14, " h - this help menu");
+    // 11 characters each side centered
+    this.framebuffer.draw_text((W-2)/2-3, 2, "MOVEMENT");
+
+    this.framebuffer.draw_text(2, 3, "[w]");
+    this.framebuffer.draw_text(W - (w.length + 2), 3, w);
+    this.framebuffer.draw_text(2, 4, "".padStart(W-4, "-"));
+
+    this.framebuffer.draw_text(2, 5, "[a]");
+    this.framebuffer.draw_text(W - (a.length + 2), 5, a);
+    this.framebuffer.draw_text(2, 6, "".padStart(W-4, "-"));
+
+    this.framebuffer.draw_text(2, 7, "[s]");
+    this.framebuffer.draw_text(W - (s.length + 2), 7, s);
+    this.framebuffer.draw_text(2, 8, "".padStart(W-4, "-"));
+
+    this.framebuffer.draw_text(2, 9, "[d]");
+    this.framebuffer.draw_text(W - (d.length + 2), 9, d);
+    this.framebuffer.draw_text(2, 10, "".padStart(W-4, "-"));
+
+    // 12 characters each side centered
+    this.framebuffer.draw_text((W-2)/2-2, 11, "ACTION");
+
+    this.framebuffer.draw_text(2, 12, "[f]");
+    this.framebuffer.draw_text(W - (f.length + 2), 12, f);
+    this.framebuffer.draw_text(2, 13, "".padStart(W-4, "-"));
+
+    this.framebuffer.draw_text(2, 14, "[i]");
+    this.framebuffer.draw_text(W - (i.length + 2), 14, i);
+    this.framebuffer.draw_text(2, 15, "".padStart(W-4, "-"));
+
+    this.framebuffer.draw_text(2, 16, "[v]");
+    this.framebuffer.draw_text(W - (v.length + 2), 16, v);
+    this.framebuffer.draw_text(2, 17, "".padStart(W-4, "-"));
+
+    this.framebuffer.draw_text(2, 18, "[b]");
+    this.framebuffer.draw_text(W - (b.length + 2), 18, b);
+    this.framebuffer.draw_text(2, 19, "".padStart(W-4, "-"));
+
+    this.framebuffer.draw_text(2, 20, "[s]");
+    this.framebuffer.draw_text(W - (S.length + 2), 20, S);
+    this.framebuffer.draw_text(2, 21, "".padStart(W-4, "-"));
+
+    this.framebuffer.draw_text(2, 22, "[u]");
+    this.framebuffer.draw_text(W - (u.length + 2), 22, u);
+    this.framebuffer.draw_text(2, 23, "".padStart(W-4, "-"));
+
+    this.framebuffer.draw_text(2, 24, "[h]");
+    this.framebuffer.draw_text(W - (h.length + 2), 24, h);
+    this.framebuffer.draw_text(2, 25, "".padStart(W-4, "-"));
+
+    this.framebuffer.draw_text(2, 26, "[e]");
+    this.framebuffer.draw_text(W - (e.length + 2), 26, e);
+    this.framebuffer.draw_text(2, 27, "".padStart(W-4, "-"));
 
     this.set_screen(Screen.Game);
   }
@@ -1437,6 +1496,10 @@ class Game {
         } else if (item.item_idx === Item.Health) {
           this.remove_item();
           this.player.hp = 100;
+        } else if (item.item_idx === Item.Map) {
+          this.remove_item();
+          // Reveal items on the map
+          this.reveal = true;
         } else {
           // TODO(implement other items)
         }
@@ -1619,6 +1682,7 @@ class Game {
     return {
       seed:     this.seed,
       floor:    this.floor,
+      reveal:   this.reveal,
       entities: entities
     };
   }
@@ -1626,6 +1690,7 @@ class Game {
   deserialize(object) {
     this.seed = object.seed;
     this.floor = object.floor;
+    this.reveal = object.reveal;
     this.random = new Random(this.seed);
     this.entities = [];
     for (let i = 0; i < object.entities.length; i++) {

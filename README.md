@@ -1,6 +1,6 @@
 # discord-rogue
 
-The following is a tiny Rogue like game for Discord.
+The following is a tiny Berlin-lite Rogue like game for Discord.
 
 # Features
 
