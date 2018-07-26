@@ -466,7 +466,7 @@ class Generator {
     this.random = new Random(seed);
     let map = new Map();
     while (!this.make_dungeon(map)) {
-      console.log("Failed to make betable map, trying again...");
+      console.log("Failed to make beatable map, trying again...");
     }
     return map;
   }
