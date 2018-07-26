@@ -22,6 +22,7 @@ const RUPEE_MAX   = 5;       // maximum rupees per screen
 const PLAYER_HP   = 100;     // player starting HP
 const GEN_QUALITY = 1000;    // generator quality, larger values = slower, smaller values = uglier maps
 const LRADIUS     = 4;       // light radius in tiles (should be a multiple of 2 for nice circles)
+const VERSION     = 1;       // bump on changes that will break the save file
 
 const Chars = {
   // Entity characters
@@ -806,7 +807,7 @@ class Game {
       this.resume_game();
     }
     if (!this.load_assets()) {
-      console.error("failed to load game assets");
+      console.log("Failed to load game assets, splash screens disabled");
     }
   }
 
@@ -821,6 +822,9 @@ class Game {
       this.resume_screen = fs.readFileSync(`${PATH}/resume.txt`).toString().replace(/\r\n/g, '\n').split("\n");
       this.gameover_screen = fs.readFileSync(`${PATH}/gameover.txt`).toString().replace(/\r\n/g, '\n').split("\n");
     } catch(err) {
+      this.start_screen = [];
+      this.resume_screen = [];
+      this.gameover_screen = [];
       return false;
     }
     return true;
@@ -1721,6 +1725,7 @@ class Game {
       entities.push(this.entities[i].serialize());
     }
     return {
+      version:  VERSION,
       seed:     this.seed,
       floor:    this.floor,
       reveal:   this.reveal,
@@ -1729,6 +1734,12 @@ class Game {
   }
 
   deserialize(object) {
+    // Version incompatability, ignore using the save file
+    if (object.version != VERSION) {
+      console.log("Failed to load save file due to version change, ignoring save");
+      return false;
+    }
+    this.version = object.version;
     this.seed = object.seed;
     this.floor = object.floor;
     this.reveal = object.reveal;
@@ -1752,7 +1763,9 @@ class Game {
 
   load() {
     try {
-      this.deserialize(JSON.parse(fs.readFileSync(`${PATH}/save.json`, "utf8")));
+      if (!this.deserialize(JSON.parse(fs.readFileSync(`${PATH}/save.json`, "utf8")))) {
+        return false;
+      }
     } catch(err) {
       // Report errors to the console during loading, but only if the file
       // exists and something else went wrong.
