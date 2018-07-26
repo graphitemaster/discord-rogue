@@ -36,6 +36,7 @@ const Chars = {
   UpStairs:   ">",
   DownStairs: "<",
   Rupee:      "◊",
+  Torch:      "t"
 };
 
 // The meta of the game, you can add more weapons and more enemies here,
@@ -152,6 +153,7 @@ class Torch {
   constructor(state) {
     // Immutable state
     this.type = Entity.Torch;
+    this.char = Chars.Torch;
 
     // Mutable state
     this.x = state ? state.x : 0;
@@ -926,7 +928,7 @@ class Game {
           }
         }
 
-        if (entity && entity.type != Entity.Torch) {
+        if (entity) {
           // They turn to werewolfs at night
           let char = this.night && entity.type === Entity.Enemy ? "W" : entity.char;
           result += draw ? char : " ";
