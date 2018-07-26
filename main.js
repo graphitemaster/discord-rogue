@@ -1120,15 +1120,19 @@ class Game {
     return false;
   }
 
+  randomize_damage(damage) {
+    return this.random.next_in_range(0, damage);
+  }
+
   update_damage(enemy) {
     // Player always delivers damage first
-    enemy.hp -= this.player.weapon_obj.dmg;
+    enemy.hp -= this.randomize_damage(this.player.weapon_obj.dmg);
     if (enemy.hp <= 0) {
       // Enemy has been killed
       return this.remove_enemy(enemy);
     }
     // Enemy delivers damage to the player
-    this.player.hp -= enemy.weapon_obj.dmg;
+    this.player.hp -= this.randomize_damage(enemy.weapon_obj.dmg);
     if (this.player.hp <= 0) {
       this.player.hp = 0;
       return true;
