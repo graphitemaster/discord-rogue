@@ -59,7 +59,8 @@ const Enemies = [
 const Item = {
   Torch:  0,
   Health: 1,
-  Map:    2
+  Map:    2,
+  Silver: 3,
 };
 
 // We're limited to 10 items, no fewer and no more, the shop can't
@@ -67,7 +68,8 @@ const Item = {
 const Items = [
   { name: "Torch",   description: "Light up a room",            cost: 1 },
   { name: "Health",  description: "Restores health to 100 HP",  cost: 3 },
-  { name: "Map",     description: "Reveals enemies and stairs", cost: 4 }
+  { name: "Map",     description: "Reveals enemies and stairs", cost: 4 },
+  { name: "Silver",  description: "Kills werewolf",             cost: 5 }
   // TODO: more items (we need 10 in total to "fill" the game out)
 ];
 
@@ -1085,19 +1087,30 @@ class Game {
     return true;
   }
 
+  remove_enemy(enemy) {
+    let index = this.entities.indexOf(enemy);
+    if (index > -1) {
+      // Player gets another kill
+      this.player.kills++;
+
+      // Remove the enemy entity
+      this.entities.splice(index, 1);
+
+      // Give the player some HP for a successfull kill
+      this.player.hp = Math.floor(this.player.hp * 1.125);
+      this.message = `Kill: ${enemy.name}`;
+
+      return true;
+    }
+    return false;
+  }
+
   update_damage(enemy) {
     // Player always delivers damage first
     enemy.hp -= this.player.weapon_obj.dmg;
     if (enemy.hp <= 0) {
-      // Remove the enemy
-      let index = this.entities.indexOf(enemy);
-      if (index > -1) {
-        // Player gets another kill
-        this.player.kills++;
-        this.entities.splice(index, 1);
-        return true;
-      }
-      return false;
+      // Enemy has been killed
+      return this.remove_enemy(enemy);
     }
     // Enemy delivers damage to the player
     this.player.hp -= enemy.weapon_obj.dmg;
@@ -1115,10 +1128,6 @@ class Game {
       if (this.player.hp <= 0) {
         // Create a new, unique game
         this.create_game(Screen.Over);
-      } else {
-        // Give the player some HP for a successfull kill
-        this.player.hp = Math.floor((this.player.hp * 2.5) / 2);
-        this.message = `Kill: ${enemy.name}`;
       }
     } else {
       this.message = `Atk: ${enemy.name}`;
@@ -1493,13 +1502,24 @@ class Game {
         if (item.item_idx === Item.Torch) { // Torch
           this.remove_item();
           this.entities.push(new Torch({x: this.player.x, y: this.player.y}));
+          this.set_screen(Screen.Game);
         } else if (item.item_idx === Item.Health) {
           this.remove_item();
           this.player.hp = 100;
+          this.set_screen(Screen.Game);
         } else if (item.item_idx === Item.Map) {
           this.remove_item();
-          // Reveal items on the map
           this.reveal = true;
+          this.set_screen(Screen.Game);
+        } else if (item.item_idx === Item.Silver) {
+          let enemy = this.check_for_enemy();
+          if (enemy) {
+            this.remove_item();
+            this.remove_enemy(enemy);
+          } else {
+            this.message = "Nothing to use on";
+          }
+          this.set_screen(Screen.Game);
         } else {
           // TODO(implement other items)
         }
