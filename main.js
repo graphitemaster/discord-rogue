@@ -345,49 +345,10 @@ class Map {
   }
 
   is_cell_playable(cell) {
-    return cell != Cell.Wall && cell != Cell.Unused;
+    return cell !== Cell.Wall && cell !== Cell.Unused;
   }
 
-  is_area_playable(x, y) {
-    if (!this.in_bounds(x, y)) {
-      return false;
-    }
-    return this.is_cell_playable(this.get_cell(x, y));
-  }
-
-  is_area_stair(x, y) {
-    let cell = this.get_cell(x, y);
-    return cell === Cell.UpStairs || cell === Cell.DownStairs;
-  }
-
-  is_area_door(x, y) {
-    let cell = this.get_cell(x, y);
-    return cell === Cell.Door;
-  }
-
-  find_stairs(cell) {
-    for (let y = 0; y < this.h; y++) {
-      for (let x = 0; x < this.w; x++) {
-        if (this.get_cell(x, y) === cell) {
-          return { x: x, y: y };
-        }
-      }
-    }
-    return null;
-  }
-
-  is_area_used(xbeg, ybeg, xend, yend) {
-    for (let y = ybeg; y != yend + 1; ++y) {
-      for (let x = xbeg; x != xend + 1; ++x) {
-        if (this.get_cell(x, y) != Cell.Unused) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-
-  is_adjacent(x, y, type) {
+  is_cell_adjacent(x, y, type) {
     return this.get_cell(x - 1, y) === type || this.get_cell(x + 1, y) === type
         || this.get_cell(x, y - 1) === type || this.get_cell(x, y + 1) === type;
   }
@@ -399,8 +360,50 @@ class Map {
     return this.get_cell(x, y);
   }
 
-  is_wall(x, y) {
+  is_area_playable(x, y) {
+    if (!this.in_bounds(x, y)) {
+      return false;
+    }
+    return this.is_cell_playable(this.get_cell(x, y));
+  }
+
+  is_area_stair(x, y) {
+    let cell = this.get_cell_wrap(x, y);
+    return cell === Cell.UpStairs || cell === Cell.DownStairs;
+  }
+
+  is_area_door(x, y) {
+    return this.get_cell_wrap(x, y) === Cell.Door;
+  }
+
+  is_area_wall(x, y) {
     return this.get_cell_wrap(x, y) === Cell.Wall;
+  }
+
+  is_area_corridor(x, y) {
+    return this.get_cell_wrap(x, y) === Cell.Corridor;
+  }
+
+  is_area_used(xbeg, ybeg, xend, yend) {
+    for (let y = ybeg; y !== yend + 1; ++y) {
+      for (let x = xbeg; x !== xend + 1; ++x) {
+        if (this.get_cell(x, y) !== Cell.Unused) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  find_stairs(cell) {
+    for (let y = 0; y < this.h; y++) {
+      for (let x = 0; x < this.w; x++) {
+        if (this.get_cell(x, y) === cell) {
+          return { x: x, y: y };
+        }
+      }
+    }
+    return null;
   }
 
   rasterize() {
@@ -421,10 +424,14 @@ class Map {
           grid[x + this.w * y] = Chars.Wall;
           break;
         case Cell.Door:
-          // if there's wall above and below us, it's vertical
-          if (this.is_wall(x, y + 1) && this.is_wall(x, y - 1)) {
+          if (this.is_area_wall(x, y + 1) && this.is_area_wall(x, y - 1)) {
+            // if there's wall above and below us, it's vertical
+            grid[x + this.w * y] = Chars.DoorV;
+          } else if (this.is_area_corridor(x + 1, y) && this.is_area_corridor(x - 1, y)) {
+            // if there's corridor to the right and left of us, it's vertical
             grid[x + this.w * y] = Chars.DoorV;
           } else {
+            // otherwise it's a horizontal door
             grid[x + this.w * y] = Chars.DoorH;
           }
           break;
@@ -564,7 +571,7 @@ class Generator {
         continue;
       }
 
-      if (map.is_adjacent(x, y, Cell.Door)) {
+      if (map.is_cell_adjacent(x, y, Cell.Door)) {
         continue;
       }
 
@@ -598,11 +605,18 @@ class Generator {
       let x = this.random.next_in_range(1, map.w - 2);
       let y = this.random.next_in_range(1, map.h - 2);
 
-      if (!map.is_adjacent(x, y, Cell.Floor) && !map.is_adjacent(x, y, Cell.Corridor)) {
+      // Don't generate if if it's not adjacent to a floor or a corridor
+      if (!map.is_cell_adjacent(x, y, Cell.Floor) && !map.is_cell_adjacent(x, y, Cell.Corridor)) {
         continue;
       }
 
-      if (map.is_adjacent(x, y, Cell.Door)) {
+      // Don't generate if it's adjacent to a door
+      if (map.is_cell_adjacent(x, y, Cell.Door)) {
+        continue;
+      }
+
+      // Don't generate if the cell is already used for a stair
+      if (map.is_area_stair(x, y)) {
         continue;
       }
 
