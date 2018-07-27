@@ -1526,6 +1526,8 @@ class Game {
       this.set_screen(Screen.Game);
     } else if (this.is_command_shop(command)) {
       this.set_screen(Screen.Shop);
+    } else if (this.is_command_help(command)) {
+      this.set_screen(Screen.Help);
     } else if (this.is_command_sell(command)) {
       const items = this.player.items;
       if (this.cursor-1 < items.length) {
@@ -1577,6 +1579,8 @@ class Game {
       this.set_screen(Screen.Game);
     } else if (this.is_command_inventory(command)) {
       this.set_screen(Screen.Inventory);
+    } else if (this.is_command_help(command)) {
+      this.set_screen(Screen.Help);
     } else if (this.is_command_buy(command)) {
       // Go ahead and buy the item
       const cost = Items[this.cursor-1].cost;
