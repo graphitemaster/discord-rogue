@@ -393,6 +393,10 @@ class Map {
     return this.get_cell_wrap(x, y) === Cell.Corridor;
   }
 
+  is_area_floor(x, y) {
+    return this.get_cell_wrap(x, y) === Cell.Floor;
+  }
+
   is_area_used(xbeg, ybeg, xend, yend) {
     for (let y = ybeg; y !== yend + 1; ++y) {
       for (let x = xbeg; x !== xend + 1; ++x) {
@@ -437,7 +441,13 @@ class Map {
             // if there's wall above and below us, it's vertical
             grid[x + this.w * y] = Chars.DoorV;
           } else if (this.is_area_corridor(x + 1, y) && this.is_area_corridor(x - 1, y)) {
-            // if there's corridor to the right and left of us, it's vertical
+            // if there's a corridor to the right and left of us, it's vertical
+            grid[x + this.w * y] = Chars.DoorV;
+          } else if (this.is_area_corridor(x + 1, y) && this.is_area_floor(x - 1, y)) {
+            // if there's a corridor to the right of us and floor to the left, it's vertical
+            grid[x + this.w * y] = Chars.DoorV;
+          } else if (this.is_area_floor(x + 1, y) && this.is_area_corridor(x - 1, y)) {
+            // if there's a corridor to the left of us and floor to the right, it's vertical
             grid[x + this.w * y] = Chars.DoorV;
           } else {
             // otherwise it's a horizontal door
@@ -1184,7 +1194,7 @@ class Game {
       return false;
     }
     // Regular expression for any multiple of wasd and optional multiple numbers
-    const movement = /([wasd]+)(\d+)?/;
+    const movement = /([wasdWASD]+)(\d+)?/;
     const groups = command.match(movement);
     if (!groups) {
       return false;
@@ -1194,26 +1204,42 @@ class Game {
 
   // Determines if the command supplied is a inventory command
   is_command_inventory(command) {
-    return command === "i";
+    return command === "i" || command === "I";
   }
 
+  // Determines if the command supplied is a shop command
   is_command_shop(command) {
-    return command === "v";
+    return command === "v" || command === "V";
   }
 
   // Determines if the command supplied is a fight command
   is_command_fight(command) {
-    return command === "f";
+    return command === "f" || command === "F";
   }
 
   // Determines if the command supplied is a help command
   is_command_help(command) {
-    return command === "h";
+    return command === "h" || command === "H";
   }
 
   // Determines if the command supplie is an exit command
   is_command_exit(command) {
-    return command === "e";
+    return command === "e" || command === "E";
+  }
+
+  // Determines if the command supplied is a sell command
+  is_command_sell(command) {
+    return command === "s" || command === "S";
+  }
+
+  // Determines if the command supplied is a use command
+  is_command_use(command) {
+    return command === "u" || command === "U";
+  }
+
+  // Determines if the command supplied is a buy command
+  is_command_buy(command) {
+    return command === "b" || command === "B";
   }
 
   // Command handler functions, to handle the command type
@@ -1223,10 +1249,11 @@ class Game {
   do_command_movement(movement) {
     const get_direction = (char) => {
       switch (char) {
-      case "w": return Direction.North;
-      case "a": return Direction.West;
-      case "s": return Direction.South;
-      case "d": return Direction.East;
+      // Case insensitive command for directional movement
+      case "w": case "W": return Direction.North;
+      case "a": case "A": return Direction.West;
+      case "s": case "S": return Direction.South;
+      case "d": case "D": return Direction.East;
       }
     };
 
@@ -1481,7 +1508,7 @@ class Game {
       this.set_screen(Screen.Game);
     } else if (this.is_command_shop(command)) {
       this.set_screen(Screen.Shop);
-    } else if (command === "s") {
+    } else if (this.is_command_sell(command)) {
       const items = this.player.items;
       if (this.cursor-1 < items.length) {
         const item = items[this.cursor-1];
@@ -1489,7 +1516,7 @@ class Game {
         this.remove_item()
         this.player.rupees += cost;
       }
-    } else if (command === "u") {
+    } else if (this.is_command_use(command)) {
       const items = this.player.items;
       if (this.cursor-1 < items.length) {
         const item = items[this.cursor-1];
@@ -1532,7 +1559,7 @@ class Game {
       this.set_screen(Screen.Game);
     } else if (this.is_command_inventory(command)) {
       this.set_screen(Screen.Inventory);
-    } else if (command === "b") {
+    } else if (this.is_command_buy(command)) {
       // Go ahead and buy the item
       const cost = Items[this.cursor-1].cost;
       if (this.player.rupees >= cost) {
