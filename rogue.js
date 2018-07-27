@@ -878,7 +878,7 @@ class Game {
       const playable_area = this.find_random_playable_area();
       this.player.x = playable_area.x;
       this.player.y = playable_area.y;
-    } while(this.check_for_enemy() || this.check_for_rupee());
+    } while(this.check_for_enemy(true) || this.check_for_rupee());
   }
 
   generate_map() {
@@ -1085,13 +1085,21 @@ class Game {
     return check(Direction.North) || check(Direction.East) || check(Direction.South) || check(Direction.West);
   }
 
-  check_for_enemy() {
-    // Search around the player for an enemy
+  check_for_enemy(radial) {
     const x = this.player.x;
     const y = this.player.y;
-    for (let i = 0; i < this.entities.length; i++) {
-      const entity = this.entities[i];
-      if (entity.type === Entity.Enemy && this.check_enemy(entity, x, y)) {
+    if (radial) {
+      // Search around the player for an enemy
+      for (let i = 0; i < this.entities.length; i++) {
+        const entity = this.entities[i];
+        if (entity.type === Entity.Enemy && this.check_enemy(entity, x, y)) {
+          return entity;
+        }
+      }
+    } else {
+      // Search on the player for enemies
+      const entity = this.get_area_entity(x, y, [Entity.Enemy]);
+      if (entity) {
         return entity;
       }
     }
@@ -1269,8 +1277,13 @@ class Game {
         if (!this.move_player(direction)) {
           return false;
         }
+        // Intersected with a rupee, pick it up
+        const rupee = this.check_for_rupee();
+        if (rupee) {
+          this.update_rupee(rupee);
+        }
         // Intersected with an enemy, terminate movement
-        if (this.check_for_enemy()) {
+        if (this.check_for_enemy(false)) {
           break;
         }
       }
@@ -1282,8 +1295,13 @@ class Game {
         if (!this.move_player(get_direction(movement[1][0]))) {
           return false;
         }
+        // Intersected with a rupee, pick it up
+        const rupee = this.check_for_rupee();
+        if (rupee) {
+          this.update_rupee(rupee);
+        }
         // Intersected with an enemy, terminate movement
-        if (this.check_for_enemy()) {
+        if (this.check_for_enemy(false)) {
           break;
         }
       }
@@ -1292,7 +1310,7 @@ class Game {
   }
 
   do_command_fight() {
-    const enemy = this.check_for_enemy();
+    const enemy = this.check_for_enemy(true);
     if (enemy) {
       this.update_enemy(enemy);
       return true;
@@ -1426,12 +1444,12 @@ class Game {
 
     // Interact based on the command type
     if (movement) {
-      if (this.check_for_enemy()) {
+      if (this.check_for_enemy(true)) {
         this.message = "Cannot flee fight";
       } else {
         if (this.do_command_movement(movement)) {
           // Check to see if the movement encountered a fight
-          const enemy = this.check_for_enemy();
+          const enemy = this.check_for_enemy(true);
           if (enemy) {
             this.message = `Enc: ${enemy.name}`;
           } else {
@@ -1454,7 +1472,7 @@ class Game {
     } else if (command && command.length > 0) {
       this.message = "Unknown or malformed command"; // exactly fits
     } else {
-      const enemy = this.check_for_enemy();
+      const enemy = this.check_for_enemy(true);
       if (enemy) {
         this.message = `Enc: ${enemy.name}`;
       } else {
@@ -1467,7 +1485,7 @@ class Game {
       // Check if the player interacts with stair or enemy, update
       // based on the interaction state.
       const stair = this.check_for_stair();
-      const enemy = this.check_for_enemy();
+      const enemy = this.check_for_enemy(true);
       const rupee = this.check_for_rupee();
 
       if (stair) {
@@ -1480,7 +1498,7 @@ class Game {
 
       this.update_ai();
 
-      const check = this.check_for_enemy();
+      const check = this.check_for_enemy(true);
       if (check) {
         this.message = `Enc: ${check.name}`;
       }
@@ -1533,7 +1551,7 @@ class Game {
           this.reveal = true;
           this.set_screen(Screen.Game);
         } else if (item.item_idx === Item.Silver) {
-          const enemy = this.check_for_enemy();
+          const enemy = this.check_for_enemy(true);
           if (enemy) {
             this.remove_item();
             this.remove_enemy(enemy);
